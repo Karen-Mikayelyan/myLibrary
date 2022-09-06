@@ -17,59 +17,60 @@ public class BookManager {
         connection = DBConnectionProvider.getInstance().getConnection();
     }
 
-    private AuthorManager eventManager = new AuthorManager();
+    private AuthorManager authorManager = new AuthorManager();
 
-    public void add(Book user) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement("Insert into user(name,surname,email,event_id) Values(?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, user.getName());
-        preparedStatement.setString(2, user.getSurname());
-        preparedStatement.setString(3, user.getEmail());
-        preparedStatement.setInt(4, user.getEvent().getId());
+    public void add(Book book) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement("Insert into book(title,description, price, author_id) " +
+                "Values(?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+        preparedStatement.setString(1, book.getTitle());
+        preparedStatement.setString(2, book.getDescription());
+        preparedStatement.setDouble(3, book.getPrice());
+        preparedStatement.setInt(4, book.getAuthor().getId());
         preparedStatement.executeUpdate();
 
         ResultSet resultSet = preparedStatement.getGeneratedKeys();
 
         if (resultSet.next()) {
             int id = resultSet.getInt(1);
-            user.setId(id);
+            book.setId(id);
         }
     }
 
     public List<Book> getAll() throws SQLException, ParseException {
         Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("SELECT * FROM user");
-        List<Book> users = new LinkedList<>();
+        ResultSet resultSet = statement.executeQuery("SELECT * FROM book");
+        List<Book> books = new LinkedList<>();
         while (resultSet.next()) {
-            users.add(getUserFromResultSet(resultSet));
+            books.add(getBookFromResultSet(resultSet));
         }
-        return users;
+        return books;
     }
 
     public Book getById(int id) throws SQLException, ParseException {
         Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("SELECT * FROM user WHERE id = " + id);
+        ResultSet resultSet = statement.executeQuery("SELECT * FROM book WHERE id = " + id);
         List<Book> users = new LinkedList<>();
         if (resultSet.next()) {
-            return getUserFromResultSet(resultSet);
+            return getBookFromResultSet(resultSet);
         }
         return null;
     }
 
-    private Book getUserFromResultSet(ResultSet resultSet) throws SQLException, ParseException {
-        Book user = new Book();
-        user.setId(resultSet.getInt(1));
-        user.setName(resultSet.getString("name"));
-        user.setSurname(resultSet.getString("surname"));
-        user.setEmail(resultSet.getString("email"));
-        int eventId = resultSet.getInt("event_id");
-        Author event = eventManager.getById(eventId);
-        user.setEvent(event);
+    private Book getBookFromResultSet(ResultSet resultSet) throws SQLException, ParseException {
+        Book book = new Book();
+        book.setId(resultSet.getInt(1));
+        book.setTitle(resultSet.getString("title"));
+        book.setDescription(resultSet.getString("description"));
+        book.setPrice(resultSet.getDouble("price"));
+        int authorId = resultSet.getInt("author_id");
+        Author author = authorManager.getById(authorId);
+        book.setAuthor(author);
 
-        return user;
+        return book;
     }
 
-    public void removeUserById(int userId) {
-        String sql = "delete from user where id = " + userId;
+    public void deleteBookById(int bookId) {
+        String sql = "delete from book where id = " + bookId;
         try {
             Statement statement = connection.createStatement();
             statement.executeUpdate(sql);
@@ -78,15 +79,15 @@ public class BookManager {
         }
     }
 
-    public void edit(Book user) {
-        String sql = "update user set name = ?,surname = ?,email = ?,event_id = ? WHERE id = ?";
+    public void edit(Book book) {
+        String sql = "update book set title = ?,description = ?,price = ?,author_id = ? WHERE id = ?";
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setString(1, user.getName());
-            preparedStatement.setString(2, user.getSurname());
-            preparedStatement.setString(3, user.getEmail());
-            preparedStatement.setInt(4, user.getEvent().getId());
-            preparedStatement.setInt(5, user.getId());
+            preparedStatement.setString(1, book.getTitle());
+            preparedStatement.setString(2, book.getDescription());
+            preparedStatement.setDouble(3, book.getPrice());
+            preparedStatement.setInt(4, book.getAuthor().getId());
+            preparedStatement.setInt(5, book.getId());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
